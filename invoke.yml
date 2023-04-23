@@ -1,0 +1,6 @@
+secrets:
+  chat_gpt: null
+
+directories:
+  stance_classification: "data/stance_classification"
+  output: "data/output"

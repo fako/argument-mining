@@ -1,0 +1,6 @@
+/.idea/
+/data/
+/venv/
+
+stance_classification.iml
+.env
