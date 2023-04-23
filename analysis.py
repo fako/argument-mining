@@ -16,7 +16,14 @@ def analyse_raw_stance_classification(ctx):
     print()
     print(df["stance"].value_counts())
     print()
-    print(df["originalStanceText"].value_counts())
+    stance_texts = df["originalStanceText"].value_counts()
+    print(stance_texts)
+    print()
+    for topic in ["abortion", "creation", "gayRights", "god", "guns", "healthcare"]:
+        print(topic)
+        print("-"*len(topic))
+        print(df[df["topic"] == topic]["originalStanceText"].value_counts())
+        print()
     print()
     for topic in ["abortion", "creation", "gayRights", "god", "guns", "healthcare"]:
         print(topic)

@@ -5,6 +5,17 @@ import json
 
 from invoke import task
 
+from constants import STANCE_SIGNAL_WORDS
+
+
+def normalize_stance_from_text(text):
+    if text in STANCE_SIGNAL_WORDS["support"]:
+        return "support"
+    elif text in STANCE_SIGNAL_WORDS["against"]:
+        return "against"
+    else:
+        return
+
 
 @task()
 def load_stance_classification(ctx):
@@ -14,6 +25,7 @@ def load_stance_classification(ctx):
     for post_file_path in glob(stance_classification_pattern, recursive=True):
         with open(post_file_path, encoding='latin-1') as post_file:
             metadata = {}
+            normalizations = {}
             text = ""
             for line in post_file.readlines():
                 metadata_match = re.match(pattern=metadata_regex, string=line)
@@ -24,8 +36,12 @@ def load_stance_classification(ctx):
             post_file_path_segments = post_file_path.split(os.path.sep)
             metadata["name"] = post_file_path_segments[-1]
             metadata["topic"] = post_file_path_segments[-2]
+            normalizations["stance"] = normalize_stance_from_text(metadata["originalStanceText"])
+            if not normalizations["stance"]:
+                continue
             records.append({
                 "metadata": metadata,
+                "normalizations": normalizations,
                 "text": text
             })
     output_file_path = os.path.join(ctx.config.directories.output, "stance_classification.raw.json")
