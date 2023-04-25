@@ -124,7 +124,6 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
     df = df[df["faults"].isnull()]
     df = df[df["argument_score"] > 0.1]
     df = df[df["text_length"] > 100]
-    df = df[df["topic"] != "gay rights"]
     print(df.head(5))
     print(df.shape)
     print(df.describe())
@@ -138,8 +137,6 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
     print_accuracy(df, "stance")
     print()
     for topic in STANCE_ZERO_SHOT_TARGETS.values():
-        if topic == "gay rights":
-            continue
         print(topic.upper())
         topic_frame = df[df["topic"] == topic]
         print_accuracy(topic_frame, "stance")
