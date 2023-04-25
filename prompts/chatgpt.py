@@ -28,7 +28,18 @@ class ChatGPTPrompt(object):
         self.data = {}
 
     def get_file_path(self, identifier):
-        return os.path.join(self.config.directories.output, "chatgpt", f"{identifier}.json")
+        return os.path.join(self.config.directories.output, "chatgpt", self.prompt_type, f"{identifier}.json")
+
+    @staticmethod
+    def read_prompt(response):
+        choice = response["choices"][0]
+        raw_content = choice["message"]["content"]
+        try:
+            json_start = raw_content.index("{")
+            json_end = len(raw_content) - raw_content[::-1].index("}")
+        except ValueError:  # substring not found
+            return
+        return json.loads(raw_content[json_start: json_end])
 
     def fetch(self, identifier, text, save=True, dry_run=False):
         if identifier in self.data and not dry_run:

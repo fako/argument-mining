@@ -3,6 +3,7 @@ import re
 from glob import glob
 import json
 
+import pandas as pd
 from invoke import task
 
 from constants import STANCE_SIGNAL_WORDS
@@ -47,3 +48,17 @@ def load_stance_classification_dataset(ctx):
     output_file_path = os.path.join(ctx.config.directories.output, "stance_classification.raw.json")
     with open(output_file_path, "w") as output_file:
         json.dump(records, output_file, indent=4)
+
+
+def save_stance_classification_dataframe(ctx, name, df):
+    path = os.path.join(ctx.config.directories.output, "frames")
+    os.makedirs(path, exist_ok=True)
+    file_path = os.path.join(path, f"{name}.pkl")
+    df.to_pickle(file_path)
+
+
+def load_stance_classification_dataframe(ctx, name):
+    file_path = os.path.join(ctx.config.directories.output, "frames", f"{name}.pkl")
+    if not os.path.exists(file_path):
+        return
+    return pd.read_pickle(file_path)
