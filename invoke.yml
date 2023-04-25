@@ -1,5 +1,8 @@
 secrets:
-  chat_gpt: null
+  chatgpt: null
+
+chatgpt:
+  organization: "org-3gMewweLh14NmMR5Ezhr8gE5"
 
 directories:
   stance_classification: "data/stance_classification"

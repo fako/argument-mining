@@ -5,7 +5,7 @@ import pandas as pd
 from invoke import task
 
 
-@task()
+@task(name="analyse-dataset")
 def analyse_raw_stance_classification(ctx):
     raw_file_path = os.path.join(ctx.config.directories.output, "stance_classification.raw.json")
     with open(raw_file_path) as raw_file:

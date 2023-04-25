@@ -1,6 +1,6 @@
 STANCE_SIGNAL_WORDS = {
     "support": {"Yes", "yes", "YES", "for", "Pro", "For"},
-    "against": {"No", "against",  "Doesnt", "NO", "Con", "no", "NOPE", "Against", "Nope"}
+    "dispute": {"No", "against",  "Doesnt", "NO", "Con", "no", "NOPE", "Against", "Nope"}
 }
 
 STANCE_ZERO_SHOT_TARGETS = {

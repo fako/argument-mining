@@ -11,13 +11,13 @@ from constants import STANCE_SIGNAL_WORDS
 def normalize_stance_from_text(text):
     if text in STANCE_SIGNAL_WORDS["support"]:
         return "support"
-    elif text in STANCE_SIGNAL_WORDS["against"]:
-        return "against"
+    elif text in STANCE_SIGNAL_WORDS["dispute"]:
+        return "dispute"
     else:
         return
 
 
-@task()
+@task(name="load-dataset")
 def load_stance_classification(ctx):
     records = []
     metadata_regex = r"#(?P<key>\w+)=(?P<value>[\w\-]+)"

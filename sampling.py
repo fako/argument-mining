@@ -6,6 +6,7 @@ from invoke import task, Exit
 
 
 @task(
+    name="sample",
     iterable=["exclude"]
 )
 def sample_stance_classification(ctx, exclude, sample=10):

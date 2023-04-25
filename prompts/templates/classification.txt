@@ -1,0 +1,4 @@
+Classify which topic the text below is arguing about and indicate the stance of the author.
+Use the following JSON as output: {"topic": "{{ '|'.join(topics) }}", "stance": "support|dispute"}
+
+{{ text }}
