@@ -18,7 +18,7 @@ def normalize_stance_from_text(text):
 
 
 @task(name="load-dataset")
-def load_stance_classification(ctx):
+def load_stance_classification_dataset(ctx):
     records = []
     metadata_regex = r"#(?P<key>\w+)=(?P<value>[\w\-]+)"
     stance_classification_pattern = os.path.join(ctx.config.directories.stance_classification, "*/post*")

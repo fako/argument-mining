@@ -6,10 +6,10 @@ from invoke import task, Exit
 
 
 @task(
-    name="sample",
+    name="sample-dataset",
     iterable=["exclude"]
 )
-def sample_stance_classification(ctx, exclude, sample=10):
+def sample_stance_classification_dataset(ctx, exclude, sample=10):
     raw_file_path = os.path.join(ctx.config.directories.output, "stance_classification.raw.json")
     with open(raw_file_path) as raw_file:
         records = json.load(raw_file)

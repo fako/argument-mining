@@ -6,7 +6,7 @@ from invoke import task
 
 
 @task(name="analyse-dataset")
-def analyse_raw_stance_classification(ctx):
+def analyse_stance_classification_dataset(ctx):
     raw_file_path = os.path.join(ctx.config.directories.output, "stance_classification.raw.json")
     with open(raw_file_path) as raw_file:
         data = json.load(raw_file)
