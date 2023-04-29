@@ -6,16 +6,7 @@ import json
 import pandas as pd
 from invoke import task
 
-from constants import STANCE_SIGNAL_WORDS
-
-
-def normalize_stance_from_text(text):
-    if text in STANCE_SIGNAL_WORDS["support"]:
-        return "support"
-    elif text in STANCE_SIGNAL_WORDS["dispute"]:
-        return "dispute"
-    else:
-        return
+from constants import STANCE_NUMBERS_TO_TARGETS
 
 
 @task(name="load-dataset")
@@ -37,7 +28,7 @@ def load_stance_classification_dataset(ctx):
             post_file_path_segments = post_file_path.split(os.path.sep)
             metadata["name"] = post_file_path_segments[-1]
             metadata["topic"] = post_file_path_segments[-2]
-            normalizations["stance"] = normalize_stance_from_text(metadata["originalStanceText"])
+            normalizations["stance"] = STANCE_NUMBERS_TO_TARGETS[metadata["stance"]]
             if not normalizations["stance"]:
                 continue
             records.append({

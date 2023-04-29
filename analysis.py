@@ -36,6 +36,11 @@ def analyse_stance_classification_dataset(ctx):
         print("-"*len(topic))
         print(df[df["topic"] == topic]["originalTopic"].value_counts())
         print()
+    for topic in ["abortion", "creation", "gayRights", "god", "guns", "healthcare"]:
+        print(topic)
+        print("-"*len(topic))
+        print(df[df["topic"] == topic]["stance"].value_counts())
+        print()
 
 
 def add_classification_data(df, chatgpt):
