@@ -53,3 +53,30 @@ def load_stance_classification_dataframe(ctx, name):
     if not os.path.exists(file_path):
         return
     return pd.read_pickle(file_path)
+
+
+class PostRecordIterator(object):
+
+    def __init__(self, output_directory, scope, max_text_length, limit=None):
+        self.max_text_length = max_text_length
+        self.limit = limit
+        data_path = os.path.join(output_directory, f"stance_classification.{scope}.json")
+        with open(data_path) as data_file:
+            data = json.load(data_file)
+        self.data = data[:limit]
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            record = self.data.pop(0)
+        except IndexError:
+            raise StopIteration()
+        metadata = record["metadata"]
+        identifier = os.path.join(metadata["topic"], metadata["name"])
+        if len(record["text"]) > self.max_text_length:
+            print(f"Text too long: {identifier}")
+            return self.__next__()
+        aspects = {}
+        return identifier, record, aspects
