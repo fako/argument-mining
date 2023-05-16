@@ -1,10 +1,8 @@
-import os
-import json
-
 from invoke import task
 
 from constants import STANCE_ZERO_SHOT_TARGETS
 from prompts.chatgpt import ChatGPTPrompt
+from embeddings.chatgpt import ChatGPTEmbeddings
 from load import PostRecordIterator
 
 
@@ -36,3 +34,26 @@ def split_stance_classification(ctx, scope, dry_run=False, limit=None):
     )
     for identifier, record, aspects in post_iterator:
         chatgpt.fetch(identifier, record["text"], dry_run=dry_run)
+
+
+@task(name="embeddings")
+def embeddings_stance_classification(ctx, scope, dry_run=False, limit=None):
+    limit = int(limit) if limit is not None else None
+    chatgpt = ChatGPTEmbeddings(ctx.config, "claims")
+    post_iterator = PostRecordIterator(
+        output_directory=ctx.config.directories.output,
+        scope=scope,
+        max_text_length=ChatGPTPrompt.text_length_limit,
+        limit=limit,
+        prompts={"splitting": ChatGPTPrompt(ctx.config, "splitting", is_list=True)},
+    )
+    for identifier, record, prompts in post_iterator:
+        splitting = prompts.get("splitting", None)
+        if not splitting:
+            print("Missing splitting prompt:", identifier)
+            continue
+        texts = []
+        for splits in splitting:
+            texts += splits["premises"]
+            texts += splits["conclusion"]
+        chatgpt.fetch(identifier, texts, dry_run=dry_run)
