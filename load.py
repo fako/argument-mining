@@ -57,9 +57,11 @@ def load_stance_classification_dataframe(ctx, name):
 
 class PostRecordIterator(object):
 
-    def __init__(self, output_directory, scope, max_text_length, limit=None):
+    def __init__(self, output_directory, scope, max_text_length, limit=None, prompts=None):
+        self.output_directory = output_directory
         self.max_text_length = max_text_length
         self.limit = limit
+        self.prompts = prompts or []
         data_path = os.path.join(output_directory, f"stance_classification.{scope}.json")
         with open(data_path) as data_file:
             data = json.load(data_file)
@@ -79,4 +81,8 @@ class PostRecordIterator(object):
             print(f"Text too long: {identifier}")
             return self.__next__()
         aspects = {}
+        for prompt_type, chatgpt in self.prompts.items():
+            with open(chatgpt.get_file_path(identifier), "r") as prompt_file:
+                prompt_data = json.load(prompt_file)
+                aspects[prompt_type] = chatgpt.read_prompt(prompt_data)
         return identifier, record, aspects

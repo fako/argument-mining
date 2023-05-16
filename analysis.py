@@ -123,7 +123,7 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
         ])
         save_stance_classification_dataframe(ctx, "chatgpt", df)
     # We enrich the data through ChatGPT
-    chatgpt = ChatGPTPrompt(ctx.config, "classification")
+    chatgpt = ChatGPTPrompt(ctx.config, "classification", is_list=False)
     add_classification_data(df, chatgpt)
     # We filter rows with texts that are: too long (672), didn't get JSON output (252) or contain few arguments
     df = df[df["faults"].isnull()]
