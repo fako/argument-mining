@@ -5,10 +5,13 @@ import pandas as pd
 from invoke import task
 import spacy
 from spacy_arguing_lexicon import ArguingLexiconParser
+from sklearn.manifold import TSNE
+import numpy as np
 
 from constants import STANCE_ZERO_SHOT_TARGETS
-from load import save_stance_classification_dataframe, load_stance_classification_dataframe
+from load import save_stance_classification_dataframe, load_stance_classification_dataframe, PostRecordIterator
 from prompts.chatgpt import ChatGPTPrompt
+from embeddings.chatgpt import ChatGPTEmbeddings
 
 
 @task(name="analyse-dataset")
@@ -160,3 +163,55 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
         errors_file_path = os.path.join(ctx.config.directories.output, f"stance_classification.errors-{topic}.json")
         with open(errors_file_path, "w") as errors_file:
             json.dump(samples, errors_file, indent=4)
+
+
+@task(name="clusters")
+def analyse_chatgpt_embedding_clusters(ctx, topic, scope, limit=None):
+    limit = int(limit) if limit is not None else None
+    chatgpt_embeddings = ChatGPTEmbeddings(ctx.config, "claims")
+    post_iterator = PostRecordIterator(
+        output_directory=ctx.config.directories.output,
+        scope=scope,
+        max_text_length=ChatGPTPrompt.text_length_limit,
+        limit=limit,
+        prompts={"splitting": ChatGPTPrompt(ctx.config, "splitting", is_list=True)},
+        embeddings={"claims": chatgpt_embeddings},
+        clip_embeddings=3,
+        topic=topic,
+    )
+    claim_texts = []
+    claim_vectors = []
+    claim_labels = []
+    for identifier, record, aspects in post_iterator:
+        splitting = aspects.get("splitting", None)
+        if not splitting:
+            print("Missing splitting prompt:", identifier)
+            continue
+        for splits in splitting:
+            claims = splits["premises"]
+            conclusion = splits["conclusion"]
+            if conclusion:
+                claims.append(conclusion)
+            for claim in claims:
+                claim_texts.append(claim)
+                text_hash = chatgpt_embeddings.get_text_hash(claim)
+                vector = aspects["claims"][text_hash]
+                claim_vectors.append(vector)
+                claim_labels.append(record["normalizations"]["stance"])
+
+    tsne = TSNE()
+    Y = tsne.fit_transform(np.array(claim_vectors))
+
+    data = []
+    for x, y, label, text in zip(Y[:, 0], Y[:, 1], claim_labels, claim_texts):
+        data.append({
+            "coordinates": {
+                "x": float(x),
+                "y": float(y)
+            },
+            "label": label,
+            "text": text
+        })
+
+    with open(os.path.join("visualizations", "tsne", "data.json", "w")) as dump_file:
+        json.dump(data, dump_file, indent=4)

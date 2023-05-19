@@ -2,5 +2,7 @@
 /data/
 /venv/
 
+visualizations/tsne/data.json
+
 stance_classification.iml
 .env

@@ -6,6 +6,7 @@ Jinja2==3.1.2
 openai==0.27.4
 spacy==2.3.8
 spacy-arguing-lexicon==0.0.3
+scikit-learn==1.2.2
 
 # SpaCy language models
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.3.0/en_core_web_sm-2.3.0.tar.gz
