@@ -57,11 +57,15 @@ def load_stance_classification_dataframe(ctx, name):
 
 class PostRecordIterator(object):
 
-    def __init__(self, output_directory, scope, max_text_length, limit=None, prompts=None):
+    def __init__(self, output_directory, scope, max_text_length, limit=None, prompts=None, embeddings=None,
+                 clip_embeddings=None, topic=None):
         self.output_directory = output_directory
         self.max_text_length = max_text_length
         self.limit = limit
-        self.prompts = prompts or []
+        self.prompts = prompts or {}
+        self.embeddings = embeddings or {}
+        self.clip_embeddings = clip_embeddings
+        self.topic = topic
         data_path = os.path.join(output_directory, f"stance_classification.{scope}.json")
         with open(data_path) as data_file:
             data = json.load(data_file)
@@ -80,9 +84,28 @@ class PostRecordIterator(object):
         if len(record["text"]) > self.max_text_length:
             print(f"Text too long: {identifier}")
             return self.__next__()
+        if self.topic and metadata["topic"] != self.topic:
+            print(f"Text off topic: {identifier}")
+            return self.__next__()
         aspects = {}
         for prompt_type, chatgpt in self.prompts.items():
-            with open(chatgpt.get_file_path(identifier), "r") as prompt_file:
+            prompt_file_path = chatgpt.get_file_path(identifier)
+            if not os.path.exists(prompt_file_path):
+                aspects[prompt_type] = None
+                continue
+            with open(prompt_file_path, "r") as prompt_file:
                 prompt_data = json.load(prompt_file)
                 aspects[prompt_type] = chatgpt.read_prompt(prompt_data)
+        for embeddings_type, chatgpt in self.embeddings.items():
+            embedding_file_paths = chatgpt.search_file_paths(identifier)
+            if not len(embedding_file_paths):
+                aspects[embeddings_type] = None
+                continue
+            aspects[embeddings_type] = {}
+            for embedding_file_path in embedding_file_paths:
+                tail, file_path = os.path.split(embedding_file_path)
+                with open(embedding_file_path, "r") as embeddings_file:
+                    embeddings_data = json.load(embeddings_file)
+                post, embedding_hash, extension = file_path.split(".")
+                aspects[embeddings_type][embedding_hash] = chatgpt.read_embedding(embeddings_data, clip=3)
         return identifier, record, aspects

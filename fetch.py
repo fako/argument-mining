@@ -52,8 +52,11 @@ def embeddings_stance_classification(ctx, scope, dry_run=False, limit=None):
         if not splitting:
             print("Missing splitting prompt:", identifier)
             continue
-        texts = []
         for splits in splitting:
-            texts += splits["premises"]
-            texts += splits["conclusion"]
-        chatgpt.fetch(identifier, texts, dry_run=dry_run)
+            for premise in splits["premises"]:
+                cache_key = chatgpt.get_cache_key(identifier, premise)
+                chatgpt.fetch(cache_key, premise, dry_run=dry_run)
+            conclusion = splits["conclusion"]
+            if conclusion:
+                cache_key = chatgpt.get_cache_key(identifier, conclusion)
+                chatgpt.fetch(cache_key, conclusion)

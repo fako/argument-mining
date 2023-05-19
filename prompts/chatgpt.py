@@ -30,7 +30,6 @@ class ChatGPTPrompt(ChatGPTFetchBase):
         try:
             return json.loads(raw_content[json_start: json_end])
         except JSONDecodeError:  # hallucinating output
-            print(raw_content[json_start: json_end])
             return
 
     def fetch(self, identifier, text, save=True, dry_run=False):
