@@ -2,7 +2,9 @@ import json
 from openai import Embedding
 import hashlib
 from glob import glob
+from time import sleep
 
+import openai.error
 from chatgpt.fetch import ChatGPTFetchBase
 
 
@@ -39,11 +41,20 @@ class ChatGPTEmbeddings(ChatGPTFetchBase):
         print(f"Fetching: {identifier}")
         if dry_run:
             return
-        response = Embedding.create(
-            input=text,
-            model=self.model,
-            **self.authentication
-        )
+        for attempt in range(0, 3):
+            try:
+                response = Embedding.create(
+                    input=text,
+                    model=self.model,
+                    **self.authentication
+                )
+                break
+            except (openai.error.RateLimitError, openai.error.APIError):
+                print("Going to sleep to relieve API")
+                sleep(30)
+                continue
+        else:
+            raise RuntimeError("Too many ChatGPT requests")
         self.set_cache(identifier, response)
         if save:
             self.save()

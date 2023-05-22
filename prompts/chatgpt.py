@@ -1,6 +1,8 @@
 import json
 from json.decoder import JSONDecodeError
+from time import sleep
 
+import openai.error
 from openai import ChatCompletion
 from chatgpt.fetch import ChatGPTFetchBase
 
@@ -8,7 +10,7 @@ from chatgpt.fetch import ChatGPTFetchBase
 class ChatGPTPrompt(ChatGPTFetchBase):
 
     model = "gpt-3.5-turbo-0301"
-    text_length_limit = 1800
+    text_length_limit = 1600
     context = None
 
     def __init__(self, config, prompt_type, context=None, is_list=False):
@@ -44,19 +46,28 @@ class ChatGPTPrompt(ChatGPTFetchBase):
             print(prompt)
             print("*"*80)
             return
-        response = ChatCompletion.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=2048 - len(prompt),
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            **self.authentication
-        )
+        for attempt in range(0, 3):
+            try:
+                response = ChatCompletion.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2048 - len(prompt),
+                    top_p=1,
+                    frequency_penalty=0,
+                    presence_penalty=0,
+                    **self.authentication
+                )
+                break
+            except (openai.error.RateLimitError, openai.error.APIError):
+                print("Going to sleep to relieve API")
+                sleep(30)
+                continue
+        else:
+            raise RuntimeError("Too many ChatGPT requests")
         self.set_cache(identifier, response)
         if save:
             self.save()
