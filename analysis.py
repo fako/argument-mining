@@ -188,8 +188,12 @@ def analyse_chatgpt_embedding_clusters(ctx, scope, topic=None, limit=None):
             print("Missing splitting prompt:", identifier)
             continue
         for splits in splitting:
-            claims = splits["premises"]
-            conclusion = splits["conclusion"]
+            if not isinstance(splits, dict):
+                print("Invalid splits type:", type(splits))
+                print(splits)
+                continue
+            claims = splits.get("premises", [])
+            conclusion = splits.get("conclusion", None)
             if conclusion:
                 claims.append(conclusion)
             for claim in claims:
