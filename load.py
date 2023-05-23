@@ -69,6 +69,8 @@ class PostRecordIterator(object):
         data_path = os.path.join(output_directory, f"stance_classification.{scope}.json")
         with open(data_path) as data_file:
             data = json.load(data_file)
+            if self.topic:
+                data = [record for record in data if record["metadata"]["topic"] == self.topic]
         self.data = data[:limit]
 
     def __iter__(self):
@@ -83,9 +85,6 @@ class PostRecordIterator(object):
         identifier = os.path.join(metadata["topic"], metadata["name"])
         if len(record["text"]) > self.max_text_length:
             print(f"Text too long: {identifier}")
-            return self.__next__()
-        if self.topic and metadata["topic"] != self.topic:
-            print(f"Text off topic: {identifier}")
             return self.__next__()
         aspects = {}
         for prompt_type, chatgpt in self.prompts.items():

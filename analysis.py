@@ -166,7 +166,7 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
 
 
 @task(name="clusters")
-def analyse_chatgpt_embedding_clusters(ctx, topic, scope, limit=None):
+def analyse_chatgpt_embedding_clusters(ctx, scope, topic=None, limit=None):
     limit = int(limit) if limit is not None else None
     chatgpt_embeddings = ChatGPTEmbeddings(ctx.config, "claims")
     post_iterator = PostRecordIterator(
@@ -197,7 +197,9 @@ def analyse_chatgpt_embedding_clusters(ctx, topic, scope, limit=None):
                 text_hash = chatgpt_embeddings.get_text_hash(claim)
                 vector = aspects["claims"][text_hash]
                 claim_vectors.append(vector)
-                claim_labels.append(record["normalizations"]["stance"])
+                claim_labels.append(
+                    record["normalizations"]["stance"] if topic else record["metadata"]["topic"]
+                )
 
     tsne = TSNE()
     Y = tsne.fit_transform(np.array(claim_vectors))
