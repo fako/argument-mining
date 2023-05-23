@@ -219,5 +219,5 @@ def analyse_chatgpt_embedding_clusters(ctx, scope, topic=None, limit=None):
             "text": text
         })
 
-    with open(os.path.join("visualizations", "tsne", "data.json", "w")) as dump_file:
+    with open(os.path.join("visualizations", "tsne", "data.json"), "w") as dump_file:
         json.dump(data, dump_file, indent=4)
