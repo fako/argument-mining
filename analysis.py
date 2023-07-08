@@ -206,7 +206,8 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
 
     print(json.dumps(scores, indent=4))
 
-    best_model_key = 7  # reduce(lambda rsl, inp: rsl if rsl[1] > inp[1] else inp, scores.items())[0]
+    best_model_key = reduce(lambda rsl, inp: rsl if rsl[1] > inp[1] else inp, scores.items())[0]
+    print(f"Found best model {best_model_key} with score {scores[best_model_key]}")
     best_model = models[best_model_key]
     best_model_claim_clusters = best_model.predict(claim_vectors)
 
