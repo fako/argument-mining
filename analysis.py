@@ -1,11 +1,14 @@
 import os
 import json
+from functools import reduce
 
 import pandas as pd
 from invoke import task
 import spacy
 from spacy_arguing_lexicon import ArguingLexiconParser
 from sklearn.manifold import TSNE
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 import numpy as np
 
 from constants import STANCE_ZERO_SHOT_TARGETS
@@ -164,16 +167,11 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
             json.dump(samples, errors_file, indent=4)
 
 
-@task(name="clusters-tsne")
-def analyse_chatgpt_embedding_tsne(ctx, scope, topic=None, limit=None):
-
-    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
-
+def write_tsne_data(vectors, labels, texts, file_name="data.json"):
     tsne = TSNE()
-    Y = tsne.fit_transform(np.array(claim_vectors))
-
+    Y = tsne.fit_transform(np.array(vectors))
     data = []
-    for x, y, label, text in zip(Y[:, 0], Y[:, 1], claim_labels, claim_texts):
+    for x, y, label, text in zip(Y[:, 0], Y[:, 1], labels, texts):
         data.append({
             "coordinates": {
                 "x": float(x),
@@ -182,6 +180,34 @@ def analyse_chatgpt_embedding_tsne(ctx, scope, topic=None, limit=None):
             "label": label,
             "text": text
         })
-
-    with open(os.path.join("visualizations", "tsne", "data.json"), "w") as dump_file:
+    with open(os.path.join("visualizations", "tsne", file_name), "w") as dump_file:
         json.dump(data, dump_file, indent=4)
+
+
+@task(name="clusters-tsne")
+def analyse_chatgpt_embedding_tsne(ctx, scope, topic=None, limit=None):
+    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+    write_tsne_data(claim_vectors, claim_labels, claim_texts)
+
+
+@task(name="clusters-kmeans")
+def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
+
+    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+
+    models = {}
+    scores = {}
+    for n_clusters in range(2, 21):
+        model = KMeans(n_clusters=n_clusters, n_init="auto")
+        claim_clusters = model.fit_predict(claim_vectors)
+        score = silhouette_score(claim_vectors, claim_clusters)
+        scores[n_clusters] = score
+        models[n_clusters] = model
+
+    print(json.dumps(scores, indent=4))
+
+    best_model_key = 7  # reduce(lambda rsl, inp: rsl if rsl[1] > inp[1] else inp, scores.items())[0]
+    best_model = models[best_model_key]
+    best_model_claim_clusters = best_model.predict(claim_vectors)
+
+    write_tsne_data(claim_vectors, [int(value) for value in best_model_claim_clusters], claim_texts)
