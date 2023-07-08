@@ -7,7 +7,7 @@ from invoke import task
 import spacy
 from spacy_arguing_lexicon import ArguingLexiconParser
 from sklearn.manifold import TSNE
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, AffinityPropagation
 from sklearn.metrics import silhouette_score
 import numpy as np
 
@@ -211,3 +211,14 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
     best_model_claim_clusters = best_model.predict(claim_vectors)
 
     write_tsne_data(claim_vectors, [int(value) for value in best_model_claim_clusters], claim_texts)
+
+
+@task(name="clusters-affinity")
+def analyse_chatgpt_embedding_affinity(ctx, scope, topic=None, limit=None):
+
+    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+
+    model = AffinityPropagation(damping=0.9)
+    claim_clusters = model.fit_predict(claim_vectors)
+
+    write_tsne_data(claim_vectors, [int(value) for value in claim_clusters], claim_texts)
