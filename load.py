@@ -7,6 +7,8 @@ import pandas as pd
 from invoke import task
 
 from constants import STANCE_NUMBERS_TO_TARGETS
+from prompts.chatgpt import ChatGPTPrompt
+from embeddings.chatgpt import ChatGPTEmbeddings
 
 
 @task(name="load-dataset")
@@ -108,3 +110,44 @@ class PostRecordIterator(object):
                 post, embedding_hash, extension = file_path.split(".")
                 aspects[embeddings_type][embedding_hash] = chatgpt.read_embedding(embeddings_data, clip=3)
         return identifier, record, aspects
+
+
+def load_claim_vectors(ctx, scope, topic=None, limit=None):
+    limit = int(limit) if limit is not None else None
+    chatgpt_embeddings = ChatGPTEmbeddings(ctx.config, "claims")
+    post_iterator = PostRecordIterator(
+        output_directory=ctx.config.directories.output,
+        scope=scope,
+        max_text_length=ChatGPTPrompt.text_length_limit,
+        limit=limit,
+        prompts={"splitting": ChatGPTPrompt(ctx.config, "splitting", is_list=True)},
+        embeddings={"claims": chatgpt_embeddings},
+        clip_embeddings=3,
+        topic=topic,
+    )
+    claim_texts = []
+    claim_vectors = []
+    claim_labels = []
+    for identifier, record, aspects in post_iterator:
+        splitting = aspects.get("splitting", None)
+        if not splitting:
+            print("Missing splitting prompt:", identifier)
+            continue
+        for splits in splitting:
+            if not isinstance(splits, dict):
+                print("Invalid splits type:", type(splits))
+                print(splits)
+                continue
+            claims = splits.get("premises", [])
+            conclusion = splits.get("conclusion", None)
+            if conclusion:
+                claims.append(conclusion)
+            for claim in claims:
+                claim_texts.append(claim)
+                text_hash = chatgpt_embeddings.get_text_hash(claim)
+                vector = aspects["claims"][text_hash]
+                claim_vectors.append(vector)
+                claim_labels.append(
+                    record["normalizations"]["stance"] if topic else record["metadata"]["topic"]
+                )
+    return claim_vectors, claim_labels, claim_texts

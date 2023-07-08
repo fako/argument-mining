@@ -3,7 +3,7 @@ from jinja2 import Environment, PackageLoader
 
 from load import load_stance_classification_dataset
 from analysis import (analyse_stance_classification_dataset, analyse_chatgpt_stance_classification,
-                      analyse_chatgpt_embedding_clusters)
+                      analyse_chatgpt_embedding_tsne)
 from sampling import sample_stance_classification_dataset
 from fetch import classify_stance_classification, split_stance_classification, embeddings_stance_classification
 from backup import backup_stance_classification_output
@@ -18,7 +18,7 @@ collection = Collection(
     analyse_chatgpt_stance_classification,
     split_stance_classification,
     embeddings_stance_classification,
-    analyse_chatgpt_embedding_clusters,
+    analyse_chatgpt_embedding_tsne,
     backup_stance_classification_output
 )
 collection.configure({

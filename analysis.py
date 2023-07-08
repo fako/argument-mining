@@ -9,9 +9,8 @@ from sklearn.manifold import TSNE
 import numpy as np
 
 from constants import STANCE_ZERO_SHOT_TARGETS
-from load import save_stance_classification_dataframe, load_stance_classification_dataframe, PostRecordIterator
+from load import save_stance_classification_dataframe, load_stance_classification_dataframe, load_claim_vectors
 from prompts.chatgpt import ChatGPTPrompt
-from embeddings.chatgpt import ChatGPTEmbeddings
 
 
 @task(name="analyse-dataset")
@@ -165,45 +164,10 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
             json.dump(samples, errors_file, indent=4)
 
 
-@task(name="clusters")
-def analyse_chatgpt_embedding_clusters(ctx, scope, topic=None, limit=None):
-    limit = int(limit) if limit is not None else None
-    chatgpt_embeddings = ChatGPTEmbeddings(ctx.config, "claims")
-    post_iterator = PostRecordIterator(
-        output_directory=ctx.config.directories.output,
-        scope=scope,
-        max_text_length=ChatGPTPrompt.text_length_limit,
-        limit=limit,
-        prompts={"splitting": ChatGPTPrompt(ctx.config, "splitting", is_list=True)},
-        embeddings={"claims": chatgpt_embeddings},
-        clip_embeddings=3,
-        topic=topic,
-    )
-    claim_texts = []
-    claim_vectors = []
-    claim_labels = []
-    for identifier, record, aspects in post_iterator:
-        splitting = aspects.get("splitting", None)
-        if not splitting:
-            print("Missing splitting prompt:", identifier)
-            continue
-        for splits in splitting:
-            if not isinstance(splits, dict):
-                print("Invalid splits type:", type(splits))
-                print(splits)
-                continue
-            claims = splits.get("premises", [])
-            conclusion = splits.get("conclusion", None)
-            if conclusion:
-                claims.append(conclusion)
-            for claim in claims:
-                claim_texts.append(claim)
-                text_hash = chatgpt_embeddings.get_text_hash(claim)
-                vector = aspects["claims"][text_hash]
-                claim_vectors.append(vector)
-                claim_labels.append(
-                    record["normalizations"]["stance"] if topic else record["metadata"]["topic"]
-                )
+@task(name="clusters-tsne")
+def analyse_chatgpt_embedding_tsne(ctx, scope, topic=None, limit=None):
+
+    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
 
     tsne = TSNE()
     Y = tsne.fit_transform(np.array(claim_vectors))
