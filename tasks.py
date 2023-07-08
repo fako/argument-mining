@@ -6,6 +6,7 @@ from analysis import (analyse_stance_classification_dataset, analyse_chatgpt_sta
                       analyse_chatgpt_embedding_clusters)
 from sampling import sample_stance_classification_dataset
 from fetch import classify_stance_classification, split_stance_classification, embeddings_stance_classification
+from backup import backup_stance_classification_output
 
 
 collection = Collection(
@@ -18,6 +19,7 @@ collection = Collection(
     split_stance_classification,
     embeddings_stance_classification,
     analyse_chatgpt_embedding_clusters,
+    backup_stance_classification_output
 )
 collection.configure({
     "prompts": Environment(loader=PackageLoader("prompts"))
