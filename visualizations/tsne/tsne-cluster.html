@@ -73,7 +73,9 @@
         .style("opacity", 0);
 
     // load data
-    d3.json("data.json", function(error, data) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const source = urlParams.get('source') || "data";
+    d3.json(`${source}.json`, function(error, data) {
 
         // don't want dots overlapping axis, so add in buffer to data domain
         xScale.domain([d3.min(data, xValue)-1, d3.max(data, xValue)+1]);
@@ -120,11 +122,6 @@
             .data(data.filter(post => post.label === "dispute"))
             .enter().append("rect")
             .attr("class", "point")
-            // .attr("d", function(d) {
-            //     var shape = (d.label === "1") ? "circle" : "square";
-            //     return d3.svg.symbol().type(shape).call(arguments);
-            // })
-            //.attr("transform", function(d) { return "translate(" + xScale(d.coordinates.x) + "," + yScale(d.coordinates.y) + ")"; })
             .attr("width", 7)
             .attr("height", 7)
             .attr("x", xMap)
