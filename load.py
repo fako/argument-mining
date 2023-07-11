@@ -112,7 +112,10 @@ class PostRecordIterator(object):
                 with open(embedding_file_path, "r") as embeddings_file:
                     embeddings_data = json.load(embeddings_file)
                 post, embedding_hash, extension = file_path.split(".")
-                aspects[embeddings_type][embedding_hash] = chatgpt.read_embedding(embeddings_data, clip=3)
+                aspects[embeddings_type][embedding_hash] = chatgpt.read_embedding(
+                    embeddings_data,
+                    clip=self.clip_embeddings
+                )
         return identifier, record, aspects
 
 
@@ -126,7 +129,8 @@ def load_claim_vectors(ctx, scope, topic=None, limit=None):
         limit=limit,
         prompts={"splitting": ChatGPTPrompt(ctx.config, "splitting", is_list=True)},
         embeddings={"claims": chatgpt_embeddings},
-        clip_embeddings=3,
+        clip_embeddings=None,
+        min_text_words=15,
         topic=topic,
     )
     claim_texts = []
