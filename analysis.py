@@ -227,7 +227,10 @@ def analyse_chatgpt_embedding_affinity(ctx, scope, topic=None, limit=None):
     model = AffinityPropagation(damping=0.9)
     claim_clusters = model.fit_predict(claim_vectors)
 
-    write_tsne_data(claim_vectors, [int(value) for value in claim_clusters], claim_texts)
+    write_tsne_data(
+        claim_vectors, claim_labels, claim_texts,
+        [int(value) for value in claim_clusters]
+    )
 
 
 @task(name="dbscan")
@@ -238,7 +241,10 @@ def analyse_chatgpt_embedding_dbscan(ctx, scope, topic=None, limit=None):
     model = DBSCAN(min_samples=20)
     claim_clusters = model.fit_predict(claim_vectors)
 
-    write_tsne_data(claim_vectors, [int(value) for value in claim_clusters], claim_texts)
+    write_tsne_data(
+        claim_vectors, claim_labels, claim_texts,
+        [int(value) for value in claim_clusters]
+    )
 
 
 @task(name="affinity-with-dbscan-filter")
@@ -251,11 +257,15 @@ def analyse_chatgpt_embedding_affinity_dbscan_filter(ctx, scope, topic=None, lim
     dbscan_mask = np.array([value >= 0 for value in claim_dbscan_clusters])
 
     affinity_vectors = np.array(claim_vectors)[dbscan_mask]
+    affinity_labels = np.array(claim_labels)[dbscan_mask]
     affinity_texts = np.array(claim_texts)[dbscan_mask]
     model = AffinityPropagation(damping=0.5, max_iter=1000)
     claim_affinity_clusters = model.fit_predict(affinity_vectors)
 
-    write_tsne_data(affinity_vectors, [int(value) for value in claim_affinity_clusters], affinity_texts)
+    write_tsne_data(
+        affinity_vectors, affinity_labels, affinity_texts,
+        [int(value) for value in claim_affinity_clusters]
+    )
 
 
 cluster_collection = Collection(
