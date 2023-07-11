@@ -133,6 +133,7 @@ def load_claim_vectors(ctx, scope, topic=None, limit=None):
         min_text_words=15,
         topic=topic,
     )
+    claim_identifiers = []
     claim_texts = []
     claim_vectors = []
     claim_labels = []
@@ -151,6 +152,7 @@ def load_claim_vectors(ctx, scope, topic=None, limit=None):
             if conclusion:
                 claims.append(conclusion)
             for claim in claims:
+                claim_identifiers.append(identifier)
                 claim_texts.append(claim)
                 text_hash = chatgpt_embeddings.get_text_hash(claim)
                 vector = aspects["claims"][text_hash]
@@ -158,4 +160,4 @@ def load_claim_vectors(ctx, scope, topic=None, limit=None):
                 claim_labels.append(
                     record["normalizations"]["stance"] if topic else record["metadata"]["topic"]
                 )
-    return claim_vectors, claim_labels, claim_texts
+    return claim_vectors, claim_labels, claim_texts, claim_identifiers

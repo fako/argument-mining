@@ -189,14 +189,14 @@ def write_tsne_data(vectors, labels, texts, clusters=None, file_name="data.json"
 
 @task(name="tsne")
 def analyse_chatgpt_embedding_tsne(ctx, scope, topic=None, limit=None):
-    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
     write_tsne_data(claim_vectors, claim_labels, claim_texts)
 
 
 @task(name="kmeans")
 def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
 
     models = {}
     scores = {}
@@ -223,7 +223,7 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
 @task(name="affinity")
 def analyse_chatgpt_embedding_affinity(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
 
     model = AffinityPropagation(damping=0.9)
     claim_clusters = model.fit_predict(claim_vectors)
@@ -237,7 +237,7 @@ def analyse_chatgpt_embedding_affinity(ctx, scope, topic=None, limit=None):
 @task(name="dbscan")
 def analyse_chatgpt_embedding_dbscan(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
 
     model = DBSCAN(min_samples=20)
     claim_clusters = model.fit_predict(claim_vectors)
@@ -251,7 +251,7 @@ def analyse_chatgpt_embedding_dbscan(ctx, scope, topic=None, limit=None):
 @task(name="affinity-with-dbscan-filter")
 def analyse_chatgpt_embedding_affinity_dbscan_filter(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
 
     model = DBSCAN(min_samples=20)
     claim_dbscan_clusters = model.fit_predict(claim_vectors)
@@ -269,16 +269,19 @@ def analyse_chatgpt_embedding_affinity_dbscan_filter(ctx, scope, topic=None, lim
     )
 
 
-@task(name="affinity-with-kmeans-filter")
-def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, limit=None):
-
-    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
-
+def learn_kmeans_noise_mask(claim_vectors, keep_least_common=True):
     model = KMeans(n_clusters=2, n_init="auto")
     noise_clusters = model.fit_predict(claim_vectors)
     noise_clusters_count = Counter([cluster for cluster in noise_clusters])
-    noise_cluster_value = noise_clusters_count.most_common(2)[1][0]
-    noise_mask = np.array([value != noise_cluster_value for value in noise_clusters])
+    noise_cluster_value = noise_clusters_count.most_common(2)[1 if keep_least_common else 0][0]
+    return np.array([value != noise_cluster_value for value in noise_clusters])
+
+
+@task(name="affinity-with-kmeans-filter")
+def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, limit=None):
+
+    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    noise_mask = learn_kmeans_noise_mask(claim_vectors)
 
     affinity_vectors = np.array(claim_vectors)[noise_mask]
     affinity_labels = np.array(claim_labels)[noise_mask]
@@ -295,13 +298,8 @@ def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, lim
 @task(name="kmeans-with-kmeans-filter")
 def analyse_chatgpt_embedding_kmeans_with_kmeans_filter(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
-
-    model = KMeans(n_clusters=2, n_init="auto")
-    noise_clusters = model.fit_predict(claim_vectors)
-    noise_clusters_count = Counter([cluster for cluster in noise_clusters])
-    noise_cluster_value = noise_clusters_count.most_common(2)[1][0]
-    noise_mask = np.array([value != noise_cluster_value for value in noise_clusters])
+    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    noise_mask = learn_kmeans_noise_mask(claim_vectors)
 
     kmeans_vectors = np.array(claim_vectors)[noise_mask]
     kmeans_labels = np.array(claim_labels)[noise_mask]
