@@ -1,6 +1,7 @@
 import os
 import json
 from functools import reduce
+from collections import Counter
 
 import pandas as pd
 from invoke import task, Collection
@@ -268,11 +269,35 @@ def analyse_chatgpt_embedding_affinity_dbscan_filter(ctx, scope, topic=None, lim
     )
 
 
+@task(name="affinity-with-kmeans-filter")
+def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, limit=None):
+
+    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+
+    model = KMeans(n_clusters=2, n_init="auto")
+    noise_clusters = model.fit_predict(claim_vectors)
+    noise_clusters_count = Counter([cluster for cluster in noise_clusters])
+    noise_cluster_value = noise_clusters_count.most_common(2)[1][0]
+    noise_mask = np.array([value != noise_cluster_value for value in noise_clusters])
+
+    affinity_vectors = np.array(claim_vectors)[noise_mask]
+    affinity_labels = np.array(claim_labels)[noise_mask]
+    affinity_texts = np.array(claim_texts)[noise_mask]
+    model = AffinityPropagation(damping=0.75, max_iter=1000)
+    claim_affinity_clusters = model.fit_predict(affinity_vectors)
+
+    write_tsne_data(
+        affinity_vectors, affinity_labels, affinity_texts,
+        [int(value) for value in claim_affinity_clusters]
+    )
+
+
 cluster_collection = Collection(
     "clusters",
     analyse_chatgpt_embedding_tsne,
     analyse_chatgpt_embedding_kmeans,
     analyse_chatgpt_embedding_affinity,
     analyse_chatgpt_embedding_dbscan,
-    analyse_chatgpt_embedding_affinity_dbscan_filter
+    analyse_chatgpt_embedding_affinity_dbscan_filter,
+    analyse_chatgpt_embedding_affinity_kmeans_filter
 )
