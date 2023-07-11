@@ -60,9 +60,10 @@ def load_stance_classification_dataframe(ctx, name):
 class PostRecordIterator(object):
 
     def __init__(self, output_directory, scope, max_text_length, limit=None, prompts=None, embeddings=None,
-                 clip_embeddings=None, topic=None):
+                 clip_embeddings=None, topic=None, min_text_words=15):
         self.output_directory = output_directory
         self.max_text_length = max_text_length
+        self.min_text_words = min_text_words
         self.limit = limit
         self.prompts = prompts or {}
         self.embeddings = embeddings or {}
@@ -87,6 +88,9 @@ class PostRecordIterator(object):
         identifier = os.path.join(metadata["topic"], metadata["name"])
         if len(record["text"]) > self.max_text_length:
             print(f"Text too long: {identifier}")
+            return self.__next__()
+        if len(record["text"].split()) < self.min_text_words:
+            print(f"Text too short: {identifier}")
             return self.__next__()
         aspects = {}
         for prompt_type, chatgpt in self.prompts.items():
