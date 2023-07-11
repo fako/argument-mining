@@ -167,17 +167,19 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
             json.dump(samples, errors_file, indent=4)
 
 
-def write_tsne_data(vectors, labels, texts, file_name="data.json"):
+def write_tsne_data(vectors, labels, texts, clusters=None, file_name="data.json"):
+    clusters = clusters if clusters else [1 for ix in range(0, len(vectors))]
     tsne = TSNE()
     Y = tsne.fit_transform(np.array(vectors))
     data = []
-    for x, y, label, text in zip(Y[:, 0], Y[:, 1], labels, texts):
+    for x, y, label, text, cluster in zip(Y[:, 0], Y[:, 1], labels, texts, clusters):
         data.append({
             "coordinates": {
                 "x": float(x),
                 "y": float(y)
             },
             "label": label,
+            "cluster": cluster,
             "text": text
         })
     with open(os.path.join("visualizations", "tsne", file_name), "w") as dump_file:
@@ -211,7 +213,10 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
     best_model = models[best_model_key]
     best_model_claim_clusters = best_model.predict(claim_vectors)
 
-    write_tsne_data(claim_vectors, [int(value) for value in best_model_claim_clusters], claim_texts)
+    write_tsne_data(
+        claim_vectors, claim_labels, claim_texts,
+        [int(value) for value in best_model_claim_clusters]
+    )
 
 
 @task(name="affinity")
