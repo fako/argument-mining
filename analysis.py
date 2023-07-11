@@ -236,10 +236,28 @@ def analyse_chatgpt_embedding_dbscan(ctx, scope, topic=None, limit=None):
     write_tsne_data(claim_vectors, [int(value) for value in claim_clusters], claim_texts)
 
 
+@task(name="affinity-with-dbscan-filter")
+def analyse_chatgpt_embedding_affinity_dbscan_filter(ctx, scope, topic=None, limit=None):
+
+    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+
+    model = DBSCAN(min_samples=20)
+    claim_dbscan_clusters = model.fit_predict(claim_vectors)
+    dbscan_mask = np.array([value >= 0 for value in claim_dbscan_clusters])
+
+    affinity_vectors = np.array(claim_vectors)[dbscan_mask]
+    affinity_texts = np.array(claim_texts)[dbscan_mask]
+    model = AffinityPropagation(damping=0.5, max_iter=1000)
+    claim_affinity_clusters = model.fit_predict(affinity_vectors)
+
+    write_tsne_data(affinity_vectors, [int(value) for value in claim_affinity_clusters], affinity_texts)
+
+
 cluster_collection = Collection(
     "clusters",
     analyse_chatgpt_embedding_tsne,
     analyse_chatgpt_embedding_kmeans,
     analyse_chatgpt_embedding_affinity,
-    analyse_chatgpt_embedding_dbscan
+    analyse_chatgpt_embedding_dbscan,
+    analyse_chatgpt_embedding_affinity_dbscan_filter
 )
