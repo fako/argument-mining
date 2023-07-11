@@ -197,7 +197,7 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
 
     models = {}
     scores = {}
-    for n_clusters in range(2, 21):
+    for n_clusters in range(10, 101):
         model = KMeans(n_clusters=n_clusters, n_init="auto")
         claim_clusters = model.fit_predict(claim_vectors)
         score = silhouette_score(claim_vectors, claim_clusters)
