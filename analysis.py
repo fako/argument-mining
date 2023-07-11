@@ -3,7 +3,7 @@ import json
 from functools import reduce
 
 import pandas as pd
-from invoke import task
+from invoke import task, Collection
 import spacy
 from spacy_arguing_lexicon import ArguingLexiconParser
 from sklearn.manifold import TSNE
@@ -184,13 +184,13 @@ def write_tsne_data(vectors, labels, texts, file_name="data.json"):
         json.dump(data, dump_file, indent=4)
 
 
-@task(name="clusters-tsne")
+@task(name="tsne")
 def analyse_chatgpt_embedding_tsne(ctx, scope, topic=None, limit=None):
     claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
     write_tsne_data(claim_vectors, claim_labels, claim_texts)
 
 
-@task(name="clusters-kmeans")
+@task(name="kmeans")
 def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
 
     claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
@@ -214,7 +214,7 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
     write_tsne_data(claim_vectors, [int(value) for value in best_model_claim_clusters], claim_texts)
 
 
-@task(name="clusters-affinity")
+@task(name="affinity")
 def analyse_chatgpt_embedding_affinity(ctx, scope, topic=None, limit=None):
 
     claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
@@ -225,7 +225,7 @@ def analyse_chatgpt_embedding_affinity(ctx, scope, topic=None, limit=None):
     write_tsne_data(claim_vectors, [int(value) for value in claim_clusters], claim_texts)
 
 
-@task(name="clusters-dbscan")
+@task(name="dbscan")
 def analyse_chatgpt_embedding_dbscan(ctx, scope, topic=None, limit=None):
 
     claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
@@ -234,3 +234,12 @@ def analyse_chatgpt_embedding_dbscan(ctx, scope, topic=None, limit=None):
     claim_clusters = model.fit_predict(claim_vectors)
 
     write_tsne_data(claim_vectors, [int(value) for value in claim_clusters], claim_texts)
+
+
+cluster_collection = Collection(
+    "clusters",
+    analyse_chatgpt_embedding_tsne,
+    analyse_chatgpt_embedding_kmeans,
+    analyse_chatgpt_embedding_affinity,
+    analyse_chatgpt_embedding_dbscan
+)

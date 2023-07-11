@@ -1,4 +1,4 @@
-from invoke import task
+from invoke import task, Collection
 
 from constants import STANCE_ZERO_SHOT_TARGETS
 from prompts.chatgpt import ChatGPTPrompt
@@ -64,3 +64,11 @@ def embeddings_stance_classification(ctx, scope, dry_run=False, limit=None):
             if conclusion:
                 cache_key = chatgpt.get_cache_key(identifier, conclusion)
                 chatgpt.fetch(cache_key, conclusion)
+
+
+fetch_collection = Collection(
+    "fetch",
+    classify_stance_classification,
+    split_stance_classification,
+    embeddings_stance_classification
+)

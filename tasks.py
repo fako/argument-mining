@@ -2,32 +2,27 @@ from invoke import Collection
 from jinja2 import Environment, PackageLoader
 
 from load import load_stance_classification_dataset
-from analysis import (analyse_stance_classification_dataset, analyse_chatgpt_stance_classification,
-                      analyse_chatgpt_embedding_tsne, analyse_chatgpt_embedding_kmeans,
-                      analyse_chatgpt_embedding_affinity, analyse_chatgpt_embedding_dbscan)
+from analysis import analyse_stance_classification_dataset, analyse_chatgpt_stance_classification, cluster_collection
 from sampling import sample_stance_classification_dataset
-from fetch import classify_stance_classification, split_stance_classification, embeddings_stance_classification
+from fetch import fetch_collection
 from backup import backup_stance_classification_output
 
 
-collection = Collection(
+stance_classification_collection = Collection(
     "sc",
     load_stance_classification_dataset,
     analyse_stance_classification_dataset,
-    sample_stance_classification_dataset,
-    classify_stance_classification,
     analyse_chatgpt_stance_classification,
-    analyse_chatgpt_embedding_kmeans,
-    analyse_chatgpt_embedding_affinity,
-    analyse_chatgpt_embedding_dbscan,
-    split_stance_classification,
-    embeddings_stance_classification,
-    analyse_chatgpt_embedding_tsne,
+    sample_stance_classification_dataset,
     backup_stance_classification_output
 )
-collection.configure({
+
+
+namespace = Collection(
+    stance_classification_collection,
+    fetch_collection,
+    cluster_collection
+)
+namespace.configure({
     "prompts": Environment(loader=PackageLoader("prompts"))
 })
-
-
-namespace = Collection(collection)
