@@ -292,6 +292,43 @@ def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, lim
     )
 
 
+@task(name="kmeans-with-kmeans-filter")
+def analyse_chatgpt_embedding_kmeans_with_kmeans_filter(ctx, scope, topic=None, limit=None):
+
+    claim_vectors, claim_labels, claim_texts = load_claim_vectors(ctx, scope, topic, limit)
+
+    model = KMeans(n_clusters=2, n_init="auto")
+    noise_clusters = model.fit_predict(claim_vectors)
+    noise_clusters_count = Counter([cluster for cluster in noise_clusters])
+    noise_cluster_value = noise_clusters_count.most_common(2)[1][0]
+    noise_mask = np.array([value != noise_cluster_value for value in noise_clusters])
+
+    kmeans_vectors = np.array(claim_vectors)[noise_mask]
+    kmeans_labels = np.array(claim_labels)[noise_mask]
+    kmeans_texts = np.array(claim_texts)[noise_mask]
+
+    models = {}
+    scores = {}
+    for n_clusters in range(10, 101):
+        model = KMeans(n_clusters=n_clusters, n_init="auto")
+        claim_clusters = model.fit_predict(kmeans_vectors)
+        score = silhouette_score(kmeans_vectors, claim_clusters)
+        scores[n_clusters] = score
+        models[n_clusters] = model
+
+    print(json.dumps(scores, indent=4))
+
+    best_model_key = reduce(lambda rsl, inp: rsl if rsl[1] > inp[1] else inp, scores.items())[0]
+    print(f"Found best model {best_model_key} with score {scores[best_model_key]}")
+    best_model = models[best_model_key]
+    best_model_clusters = best_model.predict(kmeans_vectors)
+
+    write_tsne_data(
+        kmeans_vectors, kmeans_labels, kmeans_texts,
+        [int(value) for value in best_model_clusters]
+    )
+
+
 cluster_collection = Collection(
     "clusters",
     analyse_chatgpt_embedding_tsne,
@@ -299,5 +336,6 @@ cluster_collection = Collection(
     analyse_chatgpt_embedding_affinity,
     analyse_chatgpt_embedding_dbscan,
     analyse_chatgpt_embedding_affinity_dbscan_filter,
-    analyse_chatgpt_embedding_affinity_kmeans_filter
+    analyse_chatgpt_embedding_affinity_kmeans_filter,
+    analyse_chatgpt_embedding_kmeans_with_kmeans_filter
 )
