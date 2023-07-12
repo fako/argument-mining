@@ -2,6 +2,7 @@ import os
 import json
 from functools import reduce
 from collections import Counter
+from copy import deepcopy
 
 import pandas as pd
 from invoke import task, Collection
@@ -13,6 +14,7 @@ from sklearn.metrics import silhouette_score
 import numpy as np
 
 from constants import STANCE_ZERO_SHOT_TARGETS
+from encoders import DataJSONEncoder
 from load import save_stance_classification_dataframe, load_stance_classification_dataframe, load_claim_vectors
 from prompts.chatgpt import ChatGPTPrompt
 
@@ -278,21 +280,58 @@ def learn_kmeans_noise_mask(claim_vectors, keep_least_common=True):
 
 
 @task(name="affinity-with-kmeans-filter")
-def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, limit=None):
+def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, limit=None, top_n=20):
 
-    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, claim_posts = load_claim_vectors(ctx, scope, topic, limit)
     noise_mask = learn_kmeans_noise_mask(claim_vectors)
 
     affinity_vectors = np.array(claim_vectors)[noise_mask]
     affinity_labels = np.array(claim_labels)[noise_mask]
     affinity_texts = np.array(claim_texts)[noise_mask]
+    affinity_posts = np.array(claim_posts)[noise_mask]
     model = AffinityPropagation(damping=0.75, max_iter=1000)
     claim_affinity_clusters = model.fit_predict(affinity_vectors)
 
+    # Standard write to a TSNE JSON file
     write_tsne_data(
         affinity_vectors, affinity_labels, affinity_texts,
         [int(value) for value in claim_affinity_clusters]
     )
+
+    # Here we'll analyse the made clusters and write that to output directory
+    clusters = {}
+    cluster_format = {
+        "dispute_posts": 0,
+        "dispute": {
+            "posts": set(),
+            "texts": []
+        },
+        "support_posts": 0,
+        "support": {
+            "posts": set(),
+            "texts": []
+        }
+    }
+    for cluster, label, text, post in zip(claim_affinity_clusters, affinity_labels, affinity_texts, affinity_posts):
+        if cluster not in clusters:
+            clusters[cluster] = deepcopy(cluster_format)
+        cluster_info = clusters[cluster]
+        cluster_info[label]["texts"].append([post, text])
+        if post not in cluster_info[label]["posts"]:
+            cluster_info[label]["posts"].add(post)
+            cluster_info[f"{label}_posts"] += 1
+
+    def cluster_sort(cluster):
+        posts_count = cluster["dispute_posts"] + cluster["support_posts"]
+        return posts_count * 100 if cluster["dispute_posts"] and cluster["support_posts"] else posts_count
+
+    results = sorted(clusters.values(), key=cluster_sort, reverse=True)
+    top_clusters_file_path = os.path.join(
+        ctx.config.directories.output,
+        f"stance_classification.top-clusters-{topic}.json"
+    )
+    with open(top_clusters_file_path, "w") as top_clusters_file:
+        json.dump(results[:top_n], top_clusters_file, indent=4, cls=DataJSONEncoder)
 
 
 @task(name="kmeans-with-kmeans-filter")
