@@ -1,0 +1,7 @@
+Some websites that may help with spacial positioning:
+- https://www.infsoft.com/basics/positioning-technologies/ultra-wideband/
+- https://www.iiwari.com/platform/
+- https://www.inpixon.com/technology/standards/ultra-wideband
+
+Possible dead-ends:
+- https://developer.apple.com/forums/thread/680337

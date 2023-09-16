@@ -1,0 +1,3 @@
+https://byby.dev/vector-databases
+https://geekflare.com/best-vector-databases/
+https://towardsdatascience.com/milvus-pinecone-vespa-weaviate-vald-gsi-what-unites-these-buzz-words-and-what-makes-each-9c65a3bd0696
