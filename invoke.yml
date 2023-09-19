@@ -6,5 +6,6 @@ chatgpt:
 
 directories:
   stance_classification: "data/stance_classification"
+  discourse: "data/discourse"
   output: "data/output"
   backup: "/media/fako/Leo65/data/stance_classification"
