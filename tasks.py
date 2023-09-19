@@ -3,7 +3,7 @@ from jinja2 import Environment, PackageLoader
 
 from load import load_stance_classification_dataset, unpack_discourse_dataset
 from analysis import analyse_stance_classification_dataset, analyse_chatgpt_stance_classification, cluster_collection
-from sampling import sample_stance_classification_dataset
+from sampling import sample_stance_classification_dataset, sample_discourse_dataset
 from fetch import fetch_collection
 from backup import backup_stance_classification_output
 
@@ -20,7 +20,8 @@ stance_classification_collection = Collection(
 
 discourse_collection = Collection(
     "dsc",
-    unpack_discourse_dataset
+    unpack_discourse_dataset,
+    sample_discourse_dataset
 )
 
 
