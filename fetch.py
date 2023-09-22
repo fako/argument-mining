@@ -3,7 +3,7 @@ from invoke import task, Collection
 from constants import STANCE_ZERO_SHOT_TARGETS
 from prompts.chatgpt import ChatGPTPrompt
 from embeddings.chatgpt import ChatGPTEmbeddings
-from load import PostRecordIterator
+from load.iterators import PostRecordIterator
 
 
 @task(name="classify")
