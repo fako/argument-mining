@@ -1,0 +1,4 @@
+Does the following text contain arguments relevant to the {{ topic }} debate? If so which premises and conclusions is it making and can the argument be classified as offensive?
+Respond with the following JSON: {"premises": [premise-0", "premise-1"],  "conclusion: "conclusion", "is_relevant": "yes|no|partially", "is_offensive": "yes|no|partially"}
+
+{{ text }}

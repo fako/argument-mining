@@ -77,3 +77,7 @@ class BaseRecordIterator(object):
 
 class PostRecordIterator(BaseRecordIterator):
     project = "stance_classification"
+
+
+class DiscourseRecordIterator(BaseRecordIterator):
+    pass
