@@ -12,11 +12,12 @@ class BaseRecordIterator(object):
                 data = [record for record in data if record["metadata"]["topic"] == self.topic]
         self.data = data[:self.limit]
 
-    def __init__(self, output_directory, scope, max_text_length, project=None, limit=None,
-                 prompts=None, embeddings=None, clip_embeddings=None, topic=None, min_text_words=15):
+    def __init__(self, output_directory, scope, max_text_length, project=None, limit=None, prompts=None,
+                 embeddings=None, clip_embeddings=None, topic=None, min_text_words=15, cut_off_text=False):
         # Set basic variables
         self.output_directory = output_directory
         self.max_text_length = max_text_length
+        self.cut_off_text = cut_off_text
         self.min_text_words = min_text_words
         self.limit = limit
         self.prompts = prompts or {}
@@ -39,9 +40,11 @@ class BaseRecordIterator(object):
             raise StopIteration()
         metadata = record["metadata"]
         identifier = os.path.join(metadata["topic"], metadata["name"])
-        if len(record["text"]) > self.max_text_length:
+        if len(record["text"]) > self.max_text_length and not self.cut_off_text:
             print(f"Text too long: {identifier}")
             return self.__next__()
+        elif len(record["text"]) > self.max_text_length:
+            record["text"] = record["text"][:self.max_text_length]
         if len(record["text"].split()) < self.min_text_words:
             print(f"Text too short: {identifier}")
             return self.__next__()

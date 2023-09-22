@@ -13,11 +13,13 @@ class ChatGPTPrompt(ChatGPTFetchBase):
     text_length_limit = 1600
     context = None
 
-    def __init__(self, config, prompt_type, context=None, is_list=False):
+    def __init__(self, config, prompt_type, context=None, is_list=False, model=None):
         super().__init__(config, prompt_type)
         self.context = context or {}
         self.is_list = is_list
         self.data = {}
+        if model:
+            self.model = model
 
     def read_prompt(self, response):
         choice = response["choices"][0]
