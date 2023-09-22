@@ -1,4 +1,4 @@
-from invoke import task, Collection
+from invoke import task
 
 from constants import STANCE_ZERO_SHOT_TARGETS
 from prompts.chatgpt import ChatGPTPrompt
@@ -6,7 +6,7 @@ from embeddings.chatgpt import ChatGPTEmbeddings
 from load.iterators import PostRecordIterator
 
 
-@task(name="classify")
+@task()
 def classify_stance_classification(ctx, scope, dry_run=False, limit=None):
     limit = int(limit) if limit is not None else None
     chatgpt = ChatGPTPrompt(ctx.config, "classification", context={
@@ -22,7 +22,7 @@ def classify_stance_classification(ctx, scope, dry_run=False, limit=None):
         chatgpt.fetch(identifier, record["text"], dry_run=dry_run)
 
 
-@task(name="split")
+@task()
 def split_stance_classification(ctx, scope, dry_run=False, limit=None):
     limit = int(limit) if limit is not None else None
     chatgpt = ChatGPTPrompt(ctx.config, "splitting")
@@ -36,7 +36,7 @@ def split_stance_classification(ctx, scope, dry_run=False, limit=None):
         chatgpt.fetch(identifier, record["text"], dry_run=dry_run)
 
 
-@task(name="embeddings")
+@task()
 def embeddings_stance_classification(ctx, scope, dry_run=False, limit=None):
     limit = int(limit) if limit is not None else None
     chatgpt = ChatGPTEmbeddings(ctx.config, "claims")
@@ -64,11 +64,3 @@ def embeddings_stance_classification(ctx, scope, dry_run=False, limit=None):
             if conclusion:
                 cache_key = chatgpt.get_cache_key(identifier, conclusion)
                 chatgpt.fetch(cache_key, conclusion)
-
-
-fetch_collection = Collection(
-    "fetch",
-    classify_stance_classification,
-    split_stance_classification,
-    embeddings_stance_classification
-)
