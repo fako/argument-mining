@@ -36,6 +36,7 @@ def unpack_discourse_dataset(ctx, discourse_file, discourse):
     input_file_path = os.path.join(ctx.config.directories.discourse, discourse_file)
     dataset_directory = os.path.join(ctx.config.directories.discourse, discourse)
     os.makedirs(dataset_directory, exist_ok=True)
+    records = []
     for batch in load_dump_file(input_file_path, _formatter):
         for obj in batch:
             if not obj:
@@ -44,3 +45,7 @@ def unpack_discourse_dataset(ctx, discourse_file, discourse):
             json_file_path = os.path.join(dataset_directory, f"{obj['metadata']['name']}.json")
             with open(json_file_path, "w") as json_file:
                 json.dump(obj, json_file, indent=4)
+            records.append(obj)
+    output_file_path = os.path.join(ctx.config.directories.output, f"{discourse}.raw.json")
+    with open(output_file_path, "w") as output_file:
+        json.dump(records, output_file, indent=4)
