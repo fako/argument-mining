@@ -9,3 +9,9 @@ directories:
   discourse: "data/discourse"
   output: "data/output"
   backup: "/media/fako/Leo65/data/stance_classification"
+
+remotes:
+  worker:
+    host: "34.90.241.254"
+    user: "fako"
+    data: "/cls/data"
