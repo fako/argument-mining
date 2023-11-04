@@ -67,7 +67,11 @@ class BaseRecordIterator(object):
                 tail, file_path = os.path.split(embedding_file_path)
                 with open(embedding_file_path, "r") as embeddings_file:
                     embeddings_data = json.load(embeddings_file)
-                post, embedding_hash, extension = file_path.split(".")
+                try:
+                    post, embedding_hash, extension = file_path.split(".")
+                except ValueError:
+                    post, extension = file_path.split(".")
+                    embedding_hash = post
                 aspects[embeddings_type][embedding_hash] = chatgpt.read_embedding(
                     embeddings_data,
                     clip=self.clip_embeddings
