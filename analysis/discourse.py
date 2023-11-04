@@ -2,9 +2,11 @@ import os
 import json
 
 import pandas as pd
-from invoke import task
+from invoke import task, Collection
 
 from prompts.chatgpt import ChatGPTPrompt
+from load.discourse import load_discourse_claim_vectors
+from analysis.base import write_tsne_data
 
 
 def add_assessment_data(df, chatgpt):
@@ -87,3 +89,15 @@ def analyse_chatgpt_discourse_assessment(ctx, discourse):
     print("IS_RELEVANT STATISTICS")
     print("Text length:", df[df["is_relevant"].isin(["yes", "partially"])]["text_length"].mean())
     print("Argument score", df[df["is_relevant"].isin(["yes", "partially"])]["argument_score"].mean())
+
+
+@task(name="tsne")
+def analyse_chatgpt_embedding_tsne(ctx, scope, discourse, limit=None):
+    claim_vectors, claim_labels, claim_texts, _ = load_discourse_claim_vectors(ctx, scope, discourse, limit)
+    write_tsne_data(claim_vectors, claim_labels, claim_texts)
+
+
+cluster_collection = Collection(
+    "dsc-clusters",
+    analyse_chatgpt_embedding_tsne,
+)

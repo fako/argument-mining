@@ -58,7 +58,7 @@ def load_stance_classification_dataframe(ctx, name):
     return pd.read_pickle(file_path)
 
 
-def load_claim_vectors(ctx, scope, topic=None, limit=None):
+def load_stance_classification_claim_vectors(ctx, scope, topic=None, limit=None):
     limit = int(limit) if limit is not None else None
     chatgpt_embeddings = ChatGPTEmbeddings(ctx.config, "claims")
     post_iterator = PostRecordIterator(

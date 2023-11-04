@@ -8,15 +8,16 @@ import pandas as pd
 from invoke import task, Collection
 import spacy
 from spacy_arguing_lexicon import ArguingLexiconParser
-from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans, AffinityPropagation, DBSCAN
 from sklearn.metrics import silhouette_score
 import numpy as np
 
 from constants import STANCE_ZERO_SHOT_TARGETS
 from encoders import DataJSONEncoder
-from load import save_stance_classification_dataframe, load_stance_classification_dataframe, load_claim_vectors
 from prompts.chatgpt import ChatGPTPrompt
+from load import (save_stance_classification_dataframe, load_stance_classification_dataframe,
+                  load_stance_classification_claim_vectors)
+from analysis.base import write_tsne_data
 
 
 @task(name="analyse-dataset")
@@ -170,35 +171,16 @@ def analyse_chatgpt_stance_classification(ctx, write=False):
             json.dump(samples, errors_file, indent=4)
 
 
-def write_tsne_data(vectors, labels, texts, clusters=None, file_name="data.json"):
-    clusters = clusters if clusters else [1 for ix in range(0, len(vectors))]
-    tsne = TSNE()
-    Y = tsne.fit_transform(np.array(vectors))
-    data = []
-    for x, y, label, text, cluster in zip(Y[:, 0], Y[:, 1], labels, texts, clusters):
-        data.append({
-            "coordinates": {
-                "x": float(x),
-                "y": float(y)
-            },
-            "label": label,
-            "cluster": cluster,
-            "text": text
-        })
-    with open(os.path.join("visualizations", "tsne", file_name), "w") as dump_file:
-        json.dump(data, dump_file, indent=4)
-
-
 @task(name="tsne")
 def analyse_chatgpt_embedding_tsne(ctx, scope, topic=None, limit=None):
-    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_stance_classification_claim_vectors(ctx, scope, topic, limit)
     write_tsne_data(claim_vectors, claim_labels, claim_texts)
 
 
 @task(name="kmeans")
 def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_stance_classification_claim_vectors(ctx, scope, topic, limit)
 
     models = {}
     scores = {}
@@ -225,7 +207,7 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, topic=None, limit=None):
 @task(name="affinity")
 def analyse_chatgpt_embedding_affinity(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_stance_classification_claim_vectors(ctx, scope, topic, limit)
 
     model = AffinityPropagation(damping=0.9)
     claim_clusters = model.fit_predict(claim_vectors)
@@ -239,7 +221,7 @@ def analyse_chatgpt_embedding_affinity(ctx, scope, topic=None, limit=None):
 @task(name="dbscan")
 def analyse_chatgpt_embedding_dbscan(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_stance_classification_claim_vectors(ctx, scope, topic, limit)
 
     model = DBSCAN(min_samples=20)
     claim_clusters = model.fit_predict(claim_vectors)
@@ -253,7 +235,7 @@ def analyse_chatgpt_embedding_dbscan(ctx, scope, topic=None, limit=None):
 @task(name="affinity-with-dbscan-filter")
 def analyse_chatgpt_embedding_affinity_dbscan_filter(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_stance_classification_claim_vectors(ctx, scope, topic, limit)
 
     model = DBSCAN(min_samples=20)
     claim_dbscan_clusters = model.fit_predict(claim_vectors)
@@ -282,7 +264,8 @@ def learn_kmeans_noise_mask(claim_vectors, keep_least_common=True):
 @task(name="affinity-with-kmeans-filter")
 def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, limit=None, top_n=20):
 
-    claim_vectors, claim_labels, claim_texts, claim_posts = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, claim_posts = load_stance_classification_claim_vectors(ctx, scope, topic,
+                                                                                                     limit)
     noise_mask = learn_kmeans_noise_mask(claim_vectors)
 
     affinity_vectors = np.array(claim_vectors)[noise_mask]
@@ -337,7 +320,7 @@ def analyse_chatgpt_embedding_affinity_kmeans_filter(ctx, scope, topic=None, lim
 @task(name="kmeans-with-kmeans-filter")
 def analyse_chatgpt_embedding_kmeans_with_kmeans_filter(ctx, scope, topic=None, limit=None):
 
-    claim_vectors, claim_labels, claim_texts, _ = load_claim_vectors(ctx, scope, topic, limit)
+    claim_vectors, claim_labels, claim_texts, _ = load_stance_classification_claim_vectors(ctx, scope, topic, limit)
     noise_mask = learn_kmeans_noise_mask(claim_vectors)
 
     kmeans_vectors = np.array(claim_vectors)[noise_mask]
@@ -367,7 +350,7 @@ def analyse_chatgpt_embedding_kmeans_with_kmeans_filter(ctx, scope, topic=None, 
 
 
 cluster_collection = Collection(
-    "clusters",
+    "sc-clusters",
     analyse_chatgpt_embedding_tsne,
     analyse_chatgpt_embedding_kmeans,
     analyse_chatgpt_embedding_affinity,

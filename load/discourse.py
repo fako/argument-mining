@@ -1,8 +1,11 @@
 import os
 import json
 from invoke import task
+
 from load.base import load_dump_file
+from load.iterators import DiscourseRecordIterator
 from prompts.chatgpt import ChatGPTPrompt
+from embeddings.chatgpt import ChatGPTEmbeddings
 
 
 def _formatter(obj):
@@ -49,3 +52,47 @@ def unpack_discourse_dataset(ctx, discourse_file, discourse):
     output_file_path = os.path.join(ctx.config.directories.output, f"{discourse}.raw.json")
     with open(output_file_path, "w") as output_file:
         json.dump(records, output_file, indent=4)
+
+
+def load_discourse_claim_vectors(ctx, scope, discourse, limit=None):
+    limit = int(limit) if limit is not None else None
+    chatgpt_embeddings = ChatGPTEmbeddings(ctx.config, "claims")
+    record_iterator = DiscourseRecordIterator(
+        project=discourse,
+        output_directory=ctx.config.directories.output,
+        scope=scope,
+        max_text_length=ChatGPTPrompt.text_length_limit,
+        limit=limit,
+        prompts={"assessment": ChatGPTPrompt(ctx.config, "assessment")},
+        embeddings={"claims": chatgpt_embeddings},
+        clip_embeddings=None
+    )
+    claim_identifiers = []
+    claim_texts = []
+    claim_vectors = []
+    claim_labels = []
+    for identifier, record, aspects in record_iterator:
+        # Asserting the relevancy assessment
+        assessment = aspects.get("assessment", None)
+        if not assessment:
+            print("Missing assessment prompt:", identifier)
+            continue
+        if not isinstance(assessment, dict):
+            print(f"Record {identifier} has an invalid assessment type: {type(assessment)}")
+            continue
+        is_relevant = assessment.get("is_relevant") == "yes"
+        if not is_relevant:
+            print("Irrelevant document:", identifier)
+            continue
+        claims = assessment.get("premises", [])
+        conclusion = assessment.get("conclusion", None)
+        if conclusion:
+            claims.append(conclusion)
+        for claim in claims:
+            claim_identifiers.append(identifier)
+            claim_texts.append(claim)
+            text_hash = chatgpt_embeddings.get_text_hash(claim)
+            vector = aspects["claims"][text_hash]
+            claim_vectors.append(vector)
+            claim_labels.append(record["metadata"]["source"])
+    return claim_vectors, claim_labels, claim_texts, claim_identifiers
