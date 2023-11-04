@@ -1,8 +1,11 @@
 import os
 import json
+from functools import reduce
 
 import pandas as pd
 from invoke import task, Collection
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
 from prompts.chatgpt import ChatGPTPrompt
 from load.discourse import load_discourse_claim_vectors
@@ -97,7 +100,35 @@ def analyse_chatgpt_embedding_tsne(ctx, scope, discourse, limit=None):
     write_tsne_data(claim_vectors, claim_labels, claim_texts)
 
 
+@task(name="kmeans")
+def analyse_chatgpt_embedding_kmeans(ctx, scope, discourse, limit=None):
+
+    claim_vectors, claim_labels, claim_texts, _ = load_discourse_claim_vectors(ctx, scope, discourse, limit)
+
+    models = {}
+    scores = {}
+    for n_clusters in range(2, 101):
+        model = KMeans(n_clusters=n_clusters, n_init="auto")
+        claim_clusters = model.fit_predict(claim_vectors)
+        score = silhouette_score(claim_vectors, claim_clusters)
+        scores[n_clusters] = score
+        models[n_clusters] = model
+
+    print(json.dumps(scores, indent=4))
+
+    best_model_key = reduce(lambda rsl, inp: rsl if rsl[1] > inp[1] else inp, scores.items())[0]
+    print(f"Found best model {best_model_key} with score {scores[best_model_key]}")
+    best_model = models[best_model_key]
+    best_model_claim_clusters = best_model.predict(claim_vectors)
+
+    write_tsne_data(
+        claim_vectors, claim_labels, claim_texts,
+        [int(value) for value in best_model_claim_clusters]
+    )
+
+
 cluster_collection = Collection(
     "dsc-clusters",
     analyse_chatgpt_embedding_tsne,
+    analyse_chatgpt_embedding_kmeans,
 )
