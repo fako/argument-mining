@@ -2,7 +2,7 @@ from invoke import Collection
 
 from fetch.stance_classification import (classify_stance_classification, split_stance_classification,
                                          embeddings_stance_classification)
-from fetch.discourse import assess_discourse, embeddings_discourse
+from fetch.discourse import assess_discourse, embeddings_discourse, split_discourse
 
 
 fetch_collection = Collection(
@@ -11,5 +11,6 @@ fetch_collection = Collection(
     split_stance_classification,
     embeddings_stance_classification,
     assess_discourse,
-    embeddings_discourse
+    embeddings_discourse,
+    split_discourse
 )

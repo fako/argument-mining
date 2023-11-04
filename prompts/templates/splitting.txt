@@ -1,5 +1,5 @@
 Split the paragraph below in one or more arguments and give them back as an Array of arguments. Represent the arguments with the following JSON:
-{"premises": [premise-0", "premise-1"],  "conclusion: "conclusion"}
+{"premises": ["premise-0", "premise-1"], "conclusion: "conclusion"}
 To do this you need to split each argument into its premises and one conclusion. Make sure that you quote the premises from the text and summarize the conclusion.
 
 {{ text }}
