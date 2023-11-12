@@ -36,19 +36,19 @@ def embeddings_discourse(ctx, scope, discourse, dry_run=False, limit=None):
         scope=scope,
         max_text_length=ChatGPTPrompt.text_length_limit - 200,
         limit=limit,
-        prompts={"assessment": ChatGPTPrompt(ctx.config, "assessment")},
+        prompts={"splitting_stance": ChatGPTPrompt(ctx.config, "splitting_stance")},
         cut_off_text=True
     )
     for identifier, record, prompts in post_iterator:
-        assessment = prompts.get("assessment", None)
-        if not assessment:
-            print("Missing assessment prompt:", identifier)
+        splitting = prompts.get("splitting_stance", None)
+        if not splitting:
+            print("Missing splitting prompt:", identifier)
             continue
 
-        for premise in assessment.get("premises", []):
+        for premise in splitting.get("premises", []):
             cache_key = chatgpt.get_cache_key(identifier, premise)
             chatgpt.fetch(cache_key, premise, dry_run=dry_run)
-        conclusion = assessment.get("conclusion", None)
+        conclusion = splitting.get("conclusion", None)
         if conclusion:
             cache_key = chatgpt.get_cache_key(identifier, conclusion)
             chatgpt.fetch(cache_key, conclusion)
