@@ -4,7 +4,7 @@ from jinja2 import Environment, PackageLoader
 from load import load_stance_classification_dataset, unpack_discourse_dataset
 from analysis.stance_classification import (analyse_stance_classification_dataset,
                                             analyse_chatgpt_stance_classification, cluster_collection)
-from analysis.discourse import analyse_chatgpt_discourse_assessment, cluster_collection as discourse_cluster_collection
+from analysis.discourse import analyse_chatgpt_discourse_splits, cluster_collection as discourse_cluster_collection
 from sampling import sample_stance_classification_dataset, sample_discourse_dataset
 from fetch import fetch_collection
 from backup import backup_stance_classification_output, sync_discourse_output
@@ -25,7 +25,7 @@ discourse_collection = Collection(
     unpack_discourse_dataset,
     sample_discourse_dataset,
     sync_discourse_output,
-    analyse_chatgpt_discourse_assessment
+    analyse_chatgpt_discourse_splits
 )
 
 
