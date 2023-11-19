@@ -80,6 +80,9 @@ def load_discourse_claim_vectors(ctx, scope, discourse, limit=None):
         if not isinstance(splitting, dict):
             print(f"Record {identifier} has an invalid assessment type: {type(splitting)}")
             continue
+        if not (stance := splitting.get("stance")):
+            print("Unknown stance for:", identifier)
+            continue
         claims = splitting.get("premises", [])
         conclusion = splitting.get("conclusion", None)
         if conclusion:
@@ -90,5 +93,5 @@ def load_discourse_claim_vectors(ctx, scope, discourse, limit=None):
             text_hash = chatgpt_embeddings.get_text_hash(claim)
             vector = aspects["claims"][text_hash]
             claim_vectors.append(vector)
-            claim_labels.append(record["metadata"]["source"])
+            claim_labels.append(stance)
     return claim_vectors, claim_labels, claim_texts, claim_identifiers
