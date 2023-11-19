@@ -4,7 +4,7 @@ from functools import reduce
 
 import pandas as pd
 from invoke import task, Collection
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, AffinityPropagation
 from sklearn.metrics import silhouette_score
 
 from prompts.chatgpt import ChatGPTPrompt
@@ -114,8 +114,23 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, discourse, limit=None):
     )
 
 
+@task(name="affinity")
+def analyse_chatgpt_embedding_affinity(ctx, scope, discourse, limit=None):
+
+    claim_vectors, claim_labels, claim_texts, _ = load_discourse_claim_vectors(ctx, scope, discourse, limit)
+
+    model = AffinityPropagation(damping=0.9)
+    claim_clusters = model.fit_predict(claim_vectors)
+
+    write_tsne_data(
+        claim_vectors, claim_labels, claim_texts,
+        [int(value) for value in claim_clusters]
+    )
+
+
 cluster_collection = Collection(
     "dsc-clusters",
     analyse_chatgpt_embedding_tsne,
     analyse_chatgpt_embedding_kmeans,
+    analyse_chatgpt_embedding_affinity,
 )
