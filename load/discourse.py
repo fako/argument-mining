@@ -63,7 +63,7 @@ def load_discourse_claim_vectors(ctx, scope, discourse, limit=None):
         scope=scope,
         max_text_length=ChatGPTPrompt.text_length_limit,
         limit=limit,
-        prompts={"assessment": ChatGPTPrompt(ctx.config, "assessment")},
+        prompts={"splitting_stance": ChatGPTPrompt(ctx.config, "splitting_stance")},
         embeddings={"claims": chatgpt_embeddings},
         clip_embeddings=None
     )
@@ -73,19 +73,15 @@ def load_discourse_claim_vectors(ctx, scope, discourse, limit=None):
     claim_labels = []
     for identifier, record, aspects in record_iterator:
         # Asserting the relevancy assessment
-        assessment = aspects.get("assessment", None)
-        if not assessment:
-            print("Missing assessment prompt:", identifier)
+        splitting = aspects.get("splitting_stance", None)
+        if not splitting:
+            print("Missing splitting_stance prompt:", identifier)
             continue
-        if not isinstance(assessment, dict):
-            print(f"Record {identifier} has an invalid assessment type: {type(assessment)}")
+        if not isinstance(splitting, dict):
+            print(f"Record {identifier} has an invalid assessment type: {type(splitting)}")
             continue
-        is_relevant = assessment.get("is_relevant") == "yes"
-        if not is_relevant:
-            print("Irrelevant document:", identifier)
-            continue
-        claims = assessment.get("premises", [])
-        conclusion = assessment.get("conclusion", None)
+        claims = splitting.get("premises", [])
+        conclusion = splitting.get("conclusion", None)
         if conclusion:
             claims.append(conclusion)
         for claim in claims:
