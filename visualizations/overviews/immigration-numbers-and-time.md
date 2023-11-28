@@ -1,5 +1,5 @@
-Immigratie debat getallen en tijdvakken
-=======================================
+Immigratie debat - getallen en tijdvakken
+=========================================
 
 Het algoritme heeft het internet afgespeurd naar artikelen over "immigratie".
 Vervolgens zijn alle argumenten en conclusies uit de websites gefilterd met ChatGPT.
