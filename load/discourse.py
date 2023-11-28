@@ -54,7 +54,7 @@ def unpack_discourse_dataset(ctx, discourse_file, discourse):
         json.dump(records, output_file, indent=4)
 
 
-def load_discourse_claim_vectors(ctx, scope, discourse, limit=None):
+def load_discourse_claim_vectors(ctx, scope, discourse, limit=None, urls=False):
     limit = int(limit) if limit is not None else None
     chatgpt_embeddings = ChatGPTEmbeddings(ctx.config, "claims")
     record_iterator = DiscourseRecordIterator(
@@ -71,6 +71,7 @@ def load_discourse_claim_vectors(ctx, scope, discourse, limit=None):
     claim_texts = []
     claim_vectors = []
     claim_labels = []
+    claim_urls = []
     for identifier, record, aspects in record_iterator:
         # Asserting the relevancy assessment
         splitting = aspects.get("splitting_stance", None)
@@ -94,4 +95,8 @@ def load_discourse_claim_vectors(ctx, scope, discourse, limit=None):
             vector = aspects["claims"][text_hash]
             claim_vectors.append(vector)
             claim_labels.append(stance)
-    return claim_vectors, claim_labels, claim_texts, claim_identifiers
+            claim_urls.append(record["metadata"]["url"])
+    if not urls:
+        return claim_vectors, claim_labels, claim_texts, claim_identifiers
+    else:
+        return claim_vectors, claim_labels, claim_texts, claim_identifiers, claim_urls
