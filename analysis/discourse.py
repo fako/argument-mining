@@ -119,7 +119,7 @@ def analyse_chatgpt_embedding_affinity(ctx, scope, discourse, limit=None):
 
     claim_vectors, claim_labels, claim_texts, _ = load_discourse_claim_vectors(ctx, scope, discourse, limit)
 
-    model = AffinityPropagation(damping=0.9)
+    model = AffinityPropagation(damping=0.75, max_iter=1000)
     claim_clusters = model.fit_predict(claim_vectors)
 
     write_tsne_data(
