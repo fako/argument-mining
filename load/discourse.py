@@ -84,6 +84,9 @@ def load_discourse_claim_vectors(ctx, scope, discourse, limit=None, urls=False):
         if not (stance := splitting.get("stance")):
             print("Unknown stance for:", identifier)
             continue
+        if stance not in ["dispute", "support"]:
+            print(f"Invalid stance {stance} for: {identifier}")
+            continue
         claims = splitting.get("premises", [])
         conclusion = splitting.get("conclusion", None)
         if conclusion:
