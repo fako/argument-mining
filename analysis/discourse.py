@@ -1,12 +1,14 @@
 import os
 import json
 from functools import reduce
+from copy import deepcopy
 
 import pandas as pd
 from invoke import task, Collection
 from sklearn.cluster import KMeans, AffinityPropagation
 from sklearn.metrics import silhouette_score
 
+from encoders import DataJSONEncoder
 from prompts.chatgpt import ChatGPTPrompt
 from load.discourse import load_discourse_claim_vectors
 from analysis.base import write_tsne_data
@@ -114,10 +116,43 @@ def analyse_chatgpt_embedding_kmeans(ctx, scope, discourse, limit=None):
     )
 
 
-@task(name="affinity")
-def analyse_chatgpt_embedding_affinity(ctx, scope, discourse, limit=None):
+def _analyse_top_clusters(clusters, labels, texts, posts, urls):
+    # Here we'll analyse the made clusters and write that to output directory
+    cluster_aggregation = {}
+    cluster_format = {
+        "dispute_posts": 0,
+        "dispute": {
+            "posts": set(),
+            "texts": []
+        },
+        "support_posts": 0,
+        "support": {
+            "posts": set(),
+            "texts": []
+        }
+    }
+    for cluster, label, text, post, url in zip(clusters, labels, texts, posts, urls):
+        if cluster not in cluster_aggregation:
+            cluster_aggregation[cluster] = deepcopy(cluster_format)
+        cluster_info = cluster_aggregation[cluster]
+        cluster_info[label]["texts"].append([url, text])
+        if post not in cluster_info[label]["posts"]:
+            cluster_info[label]["posts"].add(post)
+            cluster_info[f"{label}_posts"] += 1
 
-    claim_vectors, claim_labels, claim_texts, _ = load_discourse_claim_vectors(ctx, scope, discourse, limit)
+    def cluster_sort(cluster):
+        posts_count = cluster["dispute_posts"] + cluster["support_posts"]
+        return posts_count * 100 if cluster["dispute_posts"] and cluster["support_posts"] else posts_count
+
+    return sorted(cluster_aggregation.values(), key=cluster_sort, reverse=True)
+
+
+@task(name="affinity")
+def analyse_chatgpt_embedding_affinity(ctx, scope, discourse, limit=None, top_n=20):
+
+    claim_vectors, claim_labels, claim_texts, claim_posts, claim_urls = load_discourse_claim_vectors(
+        ctx, scope, discourse, limit, urls=True
+    )
 
     model = AffinityPropagation(damping=0.75, max_iter=1000)
     claim_clusters = model.fit_predict(claim_vectors)
@@ -126,6 +161,14 @@ def analyse_chatgpt_embedding_affinity(ctx, scope, discourse, limit=None):
         claim_vectors, claim_labels, claim_texts,
         [int(value) for value in claim_clusters]
     )
+
+    top_clusters = _analyse_top_clusters(claim_clusters, claim_labels, claim_texts, claim_posts, claim_urls)
+    top_clusters_file_path = os.path.join(
+        ctx.config.directories.output,
+        f"{discourse}.top-clusters.json"
+    )
+    with open(top_clusters_file_path, "w") as top_clusters_file:
+        json.dump(top_clusters[:top_n], top_clusters_file, indent=4, cls=DataJSONEncoder)
 
 
 cluster_collection = Collection(
